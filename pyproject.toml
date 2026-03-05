@@ -1,0 +1,11 @@
+[project]
+name = "ai-legion"
+version = "0.1.0"
+description = "打造属于您自己的超级 AI 大脑 —— 多模型聚合智能体"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
