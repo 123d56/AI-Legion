@@ -19,6 +19,7 @@ class ChatRequest(BaseModel):
     strategy: str | None = Field(None, description="聚合策略覆盖 (vote/best_of/chain/cascade)")
     temperature: float = Field(0.7, ge=0.0, le=2.0, description="温度参数")
     max_tokens: int = Field(4096, ge=1, le=128000, description="最大生成 token 数")
+    stream: bool = Field(False, description="是否启用流式响应")
 
 
 class ProviderResponse(BaseModel):
@@ -47,3 +48,26 @@ class HealthResponse(BaseModel):
     version: str = "0.1.0"
     active_providers: list[str] = Field(default_factory=list)
     strategy: str = ""
+
+
+# ── SSE 流式响应事件模型 ──
+
+class StreamEvent(BaseModel):
+    """SSE 流式事件"""
+    event: str = Field(..., description="事件类型: chunk / provider_done / done / error")
+    data: dict = Field(default_factory=dict, description="事件数据")
+
+
+class StreamChunk(BaseModel):
+    """流式文本片段"""
+    provider: str = Field(..., description="产出此片段的供应商")
+    model: str = Field(..., description="模型名称")
+    delta: str = Field(..., description="增量文本")
+
+
+class StreamDone(BaseModel):
+    """流式结束信号"""
+    provider: str = Field(..., description="供应商名称")
+    model: str = Field(..., description="模型名称")
+    total_tokens: int | None = Field(None, description="总 token 数")
+    latency_ms: float = Field(..., description="耗时毫秒")

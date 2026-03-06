@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import abc
 import time
-from typing import Any
+from typing import Any, AsyncIterator
 
-from app.models.schemas import Message, ProviderResponse
+from app.models.schemas import Message, ProviderResponse, StreamChunk
 
 
 class BaseProvider(abc.ABC):
@@ -38,6 +38,24 @@ class BaseProvider(abc.ABC):
         """
         ...
 
+    async def _stream(
+        self,
+        messages: list[Message],
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+    ) -> AsyncIterator[StreamChunk]:
+        """
+        流式调用模型 API，逐块产出文本。
+        子类可选实现。默认回退到非流式调用。
+        """
+        # 默认回退：调用非流式方法，一次性产出所有内容
+        result = await self._call(messages, temperature, max_tokens)
+        yield StreamChunk(
+            provider=self.name,
+            model=self.model,
+            delta=result["content"],
+        )
+
     async def chat(
         self,
         messages: list[Message],
@@ -64,4 +82,21 @@ class BaseProvider(abc.ABC):
                 content="",
                 latency_ms=round(elapsed, 2),
                 error=str(exc),
+            )
+
+    async def chat_stream(
+        self,
+        messages: list[Message],
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+    ) -> AsyncIterator[StreamChunk]:
+        """流式调用入口，带异常处理"""
+        try:
+            async for chunk in self._stream(messages, temperature, max_tokens):
+                yield chunk
+        except Exception as exc:
+            yield StreamChunk(
+                provider=self.name,
+                model=self.model,
+                delta=f"[ERROR] {exc}",
             )

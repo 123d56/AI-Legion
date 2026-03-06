@@ -34,6 +34,9 @@ class Settings:
     # 聚合策略
     strategy: str = field(default_factory=lambda: os.getenv("STRATEGY", "vote"))
 
+    # API 认证 Token（为空则跳过认证，开发模式友好）
+    api_token: str = field(default_factory=lambda: os.getenv("API_TOKEN", ""))
+
     def get_provider_configs(self) -> list[ProviderConfig]:
         """
         自动扫描环境变量，发现所有已配置的供应商。

@@ -1,4 +1,4 @@
-"""OpenAI 供应商适配器 (兼容所有 OpenAI API 格式)"""
+"""DeepSeek 供应商适配器 (兼容 OpenAI API 格式)"""
 
 from __future__ import annotations
 
@@ -10,14 +10,19 @@ from app.models.schemas import Message, StreamChunk
 from app.providers.base import BaseProvider
 
 
-class OpenAIProvider(BaseProvider):
-    name = "openai"
+class DeepSeekProvider(BaseProvider):
+    """
+    DeepSeek 使用兼容 OpenAI 的 API 格式，
+    通过设置 base_url 指向 DeepSeek 的端点。
+    """
+
+    name = "deepseek"
 
     def __init__(self, api_key: str, model: str, base_url: str | None = None):
         super().__init__(api_key, model, base_url)
         self.client = AsyncOpenAI(
             api_key=api_key,
-            base_url=base_url,
+            base_url=base_url or "https://api.deepseek.com",
         )
 
     async def _call(

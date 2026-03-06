@@ -5,6 +5,7 @@ FastAPI 路由定义
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from app.models.schemas import ChatRequest, ChatResponse, HealthResponse
 from app.engine.orchestrator import Orchestrator
@@ -34,7 +35,7 @@ async def health_check():
     orch = _get_orchestrator()
     return HealthResponse(
         status="ok",
-        version="0.1.0",
+        version="0.2.0",
         active_providers=orch.registry.list_names(),
         strategy=settings.strategy,
     )
@@ -47,8 +48,24 @@ async def chat(request: ChatRequest):
 
     发送消息到 AI 军团，所有已注册的模型将协同工作，
     通过指定的聚合策略产出最终回答。
+
+    如果 `stream=true`，将返回 SSE 流式响应。
     """
     orch = _get_orchestrator()
+
+    # 流式响应
+    if request.stream:
+        return StreamingResponse(
+            orch.chat_stream(request),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # 禁用 Nginx 缓冲
+            },
+        )
+
+    # 非流式响应
     return await orch.chat(request)
 
 
